@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dining Philosophers</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <div class="logo">🍽 Dining <span>Philosophers</span></div>
+  <div class="header-right">
+    <span id="mode-pill">DEADLOCK</span>
+  </div>
+</header>
+
+<main id="main-area">
+  <div class="table-wrap" id="table-wrap">
+    <svg id="canvas" viewBox="0 0 420 420" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="tg" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#1a1a2e"/>
+          <stop offset="100%" stop-color="#0d0d18"/>
+        </radialGradient>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="3" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <circle cx="210" cy="210" r="130" fill="url(#tg)" stroke="#252540" stroke-width="1.5"/>
+      <circle cx="210" cy="210" r="100" fill="none" stroke="#1c1c30" stroke-width="1" stroke-dasharray="4 8"/>
+      <g id="lines"></g>
+      <g id="rag-arrows" opacity=".6"></g>
+    </svg>
+
+    <div id="p0" class="phil-node thinking">
+      <div class="phil-ring"></div>
+      <div class="phil-inner"><span class="phil-emoji">🧠</span><span class="phil-label">P1</span></div>
+    </div>
+    <div id="p1" class="phil-node thinking">
+      <div class="phil-ring"></div>
+      <div class="phil-inner"><span class="phil-emoji">🧠</span><span class="phil-label">P2</span></div>
+    </div>
+    <div id="p2" class="phil-node thinking">
+      <div class="phil-ring"></div>
+      <div class="phil-inner"><span class="phil-emoji">🧠</span><span class="phil-label">P3</span></div>
+    </div>
+    <div id="p3" class="phil-node thinking">
+      <div class="phil-ring"></div>
+      <div class="phil-inner"><span class="phil-emoji">🧠</span><span class="phil-label">P4</span></div>
+    </div>
+    <div id="p4" class="phil-node thinking">
+      <div class="phil-ring"></div>
+      <div class="phil-inner"><span class="phil-emoji">🧠</span><span class="phil-label">P5</span></div>
+    </div>
+
+    <div id="f0" class="fork-node">🍴</div>
+    <div id="f1" class="fork-node">🍴</div>
+    <div id="f2" class="fork-node">🍴</div>
+    <div id="f3" class="fork-node">🍴</div>
+    <div id="f4" class="fork-node">🍴</div>
+  </div>
+</main>
+
+<aside>
+  <div class="ctrl-strip">
+    <div class="btn-row">
+      <button id="btn-start" class="go" onclick="startSim()">▶ Start</button>
+      <button id="btn-pause" onclick="pauseSim()">⏸ Pause</button>
+      <button onclick="resetSim()" class="stop">↺ Reset</button>
+    </div>
+    <div class="speed-row">
+      <span>Slow</span>
+      <input type="range" id="speed-slider" min="300" max="2500" value="1200" oninput="updateSpeed(this.value)">
+      <span>Fast</span>
+      <span id="speed-val">1.2s</span>
+    </div>
+  </div>
+
+  <div class="mode-section">
+    <div class="mode-label">Prevention Mode</div>
+    <div class="mode-grid">
+      <button class="mode-btn active" onclick="setMode('deadlock',this)">
+        <strong>Deadlock</strong>naive pickup
+      </button>
+      <button class="mode-btn" onclick="setMode('asymmetric',this)">
+        <strong>Asymmetric</strong>odd picks right
+      </button>
+      <button class="mode-btn" onclick="setMode('ordering',this)">
+        <strong>Ordering</strong>global fork order
+      </button>
+      <button class="mode-btn" onclick="setMode('waiter',this)">
+        <strong>Waiter</strong>semaphore gate
+      </button>
+    </div>
+  </div>
+
+  <div id="dl-banner">
+    <div class="dl-spin"></div>
+    <span>Deadlock detected — all philosophers waiting</span>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('log',this)">Log</button>
+    <button class="tab-btn" onclick="showTab('stats',this)">Stats</button>
+    <button class="tab-btn" onclick="showTab('info',this)">Info</button>
+  </div>
+
+  <div id="tab-log" class="tab-pane active">
+    <div id="log"></div>
+  </div>
+
+  <div id="tab-stats" class="tab-pane">
+    <div class="stats-pane" id="stats-pane"></div>
+  </div>
+
+  <div id="tab-info" class="tab-pane">
+    <div class="info-pane">
+      <h4>Deadlock Conditions</h4>
+      <p>All four must hold simultaneously for deadlock.</p>
+      <div class="condition-list">
+        <div class="cond-item" id="ci0">
+          <div class="cond-dot-i"></div>
+          <div><div class="cond-name">Mutual Exclusion</div><div class="cond-desc">Each fork used by one philosopher</div></div>
+        </div>
+        <div class="cond-item" id="ci1">
+          <div class="cond-dot-i"></div>
+          <div><div class="cond-name">Hold and Wait</div><div class="cond-desc">Holds one fork, waits for another</div></div>
+        </div>
+        <div class="cond-item" id="ci2">
+          <div class="cond-dot-i"></div>
+          <div><div class="cond-name">No Preemption</div><div class="cond-desc">Forks cannot be taken forcibly</div></div>
+        </div>
+        <div class="cond-item" id="ci3">
+          <div class="cond-dot-i"></div>
+          <div><div class="cond-name">Circular Wait</div><div class="cond-desc">Each waits for next philosopher's fork</div></div>
+        </div>
+      </div>
+      <br>
+      <h4 id="mode-title">Current: Deadlock</h4>
+      <p id="mode-desc">All philosophers pick up the left fork first, then wait for the right. This creates a circular dependency and deadlock.</p>
+    </div>
+  </div>
+
+  <div class="global-stats">
+    <div class="g-stat"><div class="g-stat-val" id="gs-meals">0</div><div class="g-stat-lbl">Meals</div></div>
+    <div class="g-stat"><div class="g-stat-val" id="gs-time">0s</div><div class="g-stat-lbl">Elapsed</div></div>
+    <div class="g-stat"><div class="g-stat-val" id="gs-dl">0</div><div class="g-stat-lbl">Deadlocks</div></div>
+  </div>
+</aside>
+
+<script src="script.js"></script>
+</body>
+</html>
